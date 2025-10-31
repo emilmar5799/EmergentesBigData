@@ -1,0 +1,6 @@
+# Apache Spark (versión estable compatible)
+pyspark==3.5.0
+
+# Utilidades adicionales (opcionales)
+python-dotenv>=1.0.0
+
