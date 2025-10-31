@@ -1,0 +1,53 @@
+# --- Entorno virtual ---
+venv/
+ENV/
+env/
+.venv/
+
+# --- Compilaciones de PyInstaller ---
+build/
+dist/
+*.spec
+
+# --- Archivos temporales de Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Variables de entorno ---
+.env
+.env.*
+!.env.example
+
+# --- Configuración local de VSCode / IDE ---
+.vscode/
+.idea/
+*.code-workspace
+
+# --- Logs y caché ---
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.DS_Store
+Thumbs.db
+
+# --- Archivos del sistema ---
+desktop.ini
+.DS_Store
+ehthumbs.db
+
+# --- Archivos generados o binarios ---
+*.exe
+*.dll
+*.so
+*.dylib
+
+# --- Archivos de empaquetado ---
+*.zip
+*.rar
+
+# --- Notebooks y outputs temporales ---
+.ipynb_checkpoints/
+*.ipynb
