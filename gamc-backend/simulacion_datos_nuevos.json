@@ -1,0 +1,112 @@
+[
+    {
+        "Time": "2025-11-10T20:27:33.773222Z",
+        "deviceinfo.deviceName": "Sensor-API-002",
+        "deviceinfo.tenantName": "Empresa Simulada S.A.",
+        "deviceinfo.Tag.Address": "API_Endpoint_Simulado",
+        "Object.laeq": 43.81,
+        "Object.lai": 25.14,
+        "Object.laiMax": 81.8,
+        "Object.Battery": 86,
+        "Object.status": "NORMAL"
+    },
+    {
+        "Time": "2025-11-10T20:27:35.778197Z",
+        "deviceinfo.deviceName": "Sensor-API-002",
+        "deviceinfo.tenantName": "Empresa Simulada S.A.",
+        "deviceinfo.Tag.Address": "API_Endpoint_Simulado",
+        "Object.laeq": 45.29,
+        "Object.lai": 21.45,
+        "Object.laiMax": 81.8,
+        "Object.Battery": 88,
+        "Object.status": "NORMAL"
+    },
+    {
+        "Time": "2025-11-10T20:27:37.803317Z",
+        "deviceinfo.deviceName": "Sensor-API-002",
+        "deviceinfo.tenantName": "Empresa Simulada S.A.",
+        "deviceinfo.Tag.Address": "API_Endpoint_Simulado",
+        "Object.laeq": 31.58,
+        "Object.lai": 28.25,
+        "Object.laiMax": 81.8,
+        "Object.Battery": 81,
+        "Object.status": "NORMAL"
+    },
+    {
+        "Time": "2025-11-10T20:27:39.833989Z",
+        "deviceinfo.deviceName": "Sensor-API-002",
+        "deviceinfo.tenantName": "Empresa Simulada S.A.",
+        "deviceinfo.Tag.Address": "API_Endpoint_Simulado",
+        "Object.laeq": 26.07,
+        "Object.lai": 20.64,
+        "Object.laiMax": 81.8,
+        "Object.Battery": 93,
+        "Object.status": "NORMAL"
+    },
+    {
+        "Time": "2025-11-10T20:27:41.848979Z",
+        "deviceinfo.deviceName": "Sensor-API-002",
+        "deviceinfo.tenantName": "Empresa Simulada S.A.",
+        "deviceinfo.Tag.Address": "API_Endpoint_Simulado",
+        "Object.laeq": 32.67,
+        "Object.lai": 23.13,
+        "Object.laiMax": 81.8,
+        "Object.Battery": 92,
+        "Object.status": "NORMAL"
+    },
+    {
+        "Time": "2025-11-10T20:27:43.864871Z",
+        "deviceinfo.deviceName": "Sensor-API-002",
+        "deviceinfo.tenantName": "Empresa Simulada S.A.",
+        "deviceinfo.Tag.Address": "API_Endpoint_Simulado",
+        "Object.laeq": 67.13,
+        "Object.lai": 42.7,
+        "Object.laiMax": 81.8,
+        "Object.Battery": 82,
+        "Object.status": "ALERTA"
+    },
+    {
+        "Time": "2025-11-10T20:27:45.872703Z",
+        "deviceinfo.deviceName": "Sensor-API-002",
+        "deviceinfo.tenantName": "Empresa Simulada S.A.",
+        "deviceinfo.Tag.Address": "API_Endpoint_Simulado",
+        "Object.laeq": 38.41,
+        "Object.lai": 36.33,
+        "Object.laiMax": 81.8,
+        "Object.Battery": 75,
+        "Object.status": "NORMAL"
+    },
+    {
+        "Time": "2025-11-10T20:27:47.887268Z",
+        "deviceinfo.deviceName": "Sensor-API-002",
+        "deviceinfo.tenantName": "Empresa Simulada S.A.",
+        "deviceinfo.Tag.Address": "API_Endpoint_Simulado",
+        "Object.laeq": 25.2,
+        "Object.lai": 21.93,
+        "Object.laiMax": 81.8,
+        "Object.Battery": 91,
+        "Object.status": "NORMAL"
+    },
+    {
+        "Time": "2025-11-10T20:27:49.892027Z",
+        "deviceinfo.deviceName": "Sensor-API-002",
+        "deviceinfo.tenantName": "Empresa Simulada S.A.",
+        "deviceinfo.Tag.Address": "API_Endpoint_Simulado",
+        "Object.laeq": 30.41,
+        "Object.lai": 21.27,
+        "Object.laiMax": 81.8,
+        "Object.Battery": 75,
+        "Object.status": "NORMAL"
+    },
+    {
+        "Time": "2025-11-10T20:27:51.900616Z",
+        "deviceinfo.deviceName": "Sensor-API-002",
+        "deviceinfo.tenantName": "Empresa Simulada S.A.",
+        "deviceinfo.Tag.Address": "API_Endpoint_Simulado",
+        "Object.laeq": 34.41,
+        "Object.lai": 27.75,
+        "Object.laiMax": 81.8,
+        "Object.Battery": 74,
+        "Object.status": "NORMAL"
+    }
+]
