@@ -1,42 +1,76 @@
-// src/pages/Login.tsx
+import { useState } from "react";
+import { API } from "../api/BaseUrl";
+import { useNavigate } from "react-router-dom";
+
 export default function Login() {
+  const navigate = useNavigate();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+
+    try {
+      const res = await API.post("/api/auth/login", {
+        email,
+        password,
+      });
+
+      console.log("LOGIN RESPONSE:", res.data);
+
+      if (res.data.error) {
+        setErrorMsg("Credenciales inválidas");
+        return;
+      }
+
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+
+      navigate("/users");
+    } catch (error) {
+      console.error("Error al iniciar sesión:", error);
+      setErrorMsg("Credenciales inválidas");
+    }
+  };
+
   return (
     <div className="min-h-[calc(100vh-56px)] flex items-center justify-center bg-slate-100">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
         <div className="text-center mb-6">
-          <div className="mx-auto mb-3 h-12 w-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 text-2xl">
-            🔐
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900">Iniciar sesión</h1>
-          <p className="text-slate-500 text-sm">Ingresa con tu cuenta GAMC</p>
+          <h1 className="text-2xl font-bold">Iniciar sesión</h1>
         </div>
 
-        <form className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Correo
-            </label>
-            <input
-              type="email"
-              placeholder="tucorreo@dominio.com"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-            />
-          </div>
+        {errorMsg && (
+          <p className="text-red-600 bg-red-100 border border-red-300 px-3 py-2 rounded mb-4 text-center">
+            {errorMsg}
+          </p>
+        )}
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              placeholder="********"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-            />
-          </div>
+        <form className="space-y-4" onSubmit={handleLogin}>
+          <input
+            type="email"
+            placeholder="Correo"
+            className="w-full border px-3 py-2 rounded"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+
+          <input
+            type="password"
+            placeholder="Contraseña"
+            className="w-full border px-3 py-2 rounded"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
 
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition"
+            className="w-full bg-blue-600 text-white px-3 py-2 rounded-lg"
           >
             Entrar
           </button>

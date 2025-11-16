@@ -1,12 +1,14 @@
-import os
-from dotenv import load_dotenv
+# app/config/settings.py
+from pydantic_settings import BaseSettings
 
-# Cargar variables del archivo .env
-load_dotenv()
+class Settings(BaseSettings):
+    MONGO_URI: str
+    JWT_SECRET: str = "SUPER_SECRETO_CAMBIA_ESTE_VALOR"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRATION_SECONDS: int = 3600
+    API_BASE: str = "http://127.0.0.1:8000"  # ← AGREGAR ESTA LÍNEA
 
-class Settings:
-    MYSQL_URL = os.getenv("MYSQL_URL")
-    MONGO_URL = os.getenv("MONGO_URL")
-    SECRET_KEY = os.getenv("SECRET_KEY", "secret")
+    class Config:
+        env_file = ".env"
 
 settings = Settings()
