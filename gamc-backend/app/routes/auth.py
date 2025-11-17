@@ -29,8 +29,8 @@ def login(data: LoginInput):
         "token": token,
         "user": {
             "id": str(user["_id"]),
-            "name": user.get("name", "Sin nombre"),   # ← YA NO CRASHEA
+            "name": user.get("name", "Sin nombre"),   
             "email": user["email"],
-            "role": user.get("role", "USUARIO")       # ← Opcional pero recomendado
+            "role": user.get("role", "USUARIO")      
         }
     }

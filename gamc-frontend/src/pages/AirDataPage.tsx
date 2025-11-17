@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 import { API } from "../api/BaseUrl";
+import {
+  PieChart, Pie, Cell,
+  BarChart, Bar, XAxis, YAxis,
+  Tooltip, Legend, CartesianGrid
+} from "recharts";
 
 interface AirSample {
   sensor_id: string;
@@ -37,7 +42,7 @@ export default function AirDataPage() {
   const fetchAirData = () => {
     const endpoint = showAll ? "/api/data/air" : "/api/data/air/latest";
     const params = showAll ? {} : { limit };
-    
+
     API.get(endpoint, { params })
       .then((res) => setAirData(res.data))
       .catch((err) => console.error("Error:", err));
@@ -71,7 +76,7 @@ export default function AirDataPage() {
       const text = await file.text();
       const lines = text.split('\n');
       const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-      
+
       // Validar columnas
       const missingColumns = requiredColumns.filter(col => !headers.includes(col));
       if (missingColumns.length > 0) {
@@ -84,7 +89,7 @@ export default function AirDataPage() {
       const rows: CSVRow[] = [];
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
-        
+
         const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
         const row: any = {};
         headers.forEach((header, index) => {
@@ -101,7 +106,7 @@ export default function AirDataPage() {
       // Procesar cada fila
       for (let i = 0; i < Math.min(rows.length, limit); i++) {
         const row = rows[i];
-        
+
         const payload = {
           sensor_id: row["deviceInfo.deviceName"],
           time: row["time"],
@@ -115,7 +120,7 @@ export default function AirDataPage() {
         // Validar campos críticos - más flexible ahora
         const criticalFields = ["sensor_id", "time"];
         const missingCriticalFields = criticalFields.filter(field => !payload[field as keyof typeof payload]);
-        
+
         if (missingCriticalFields.length > 0) {
           console.log(`Fila ${i + 1} incompleta → saltada. Campos críticos vacíos: ${missingCriticalFields}`);
           totalErr++;
@@ -142,7 +147,7 @@ export default function AirDataPage() {
       }
 
       setMessage(`✅ ETL completado: ${totalOk} insertados, ${totalErr} errores`);
-      
+
       // Recargar datos después de 2 segundos
       setTimeout(() => {
         fetchAirData();
@@ -166,7 +171,7 @@ export default function AirDataPage() {
     }
 
     processCSV(file);
-    
+
     // Resetear input para permitir seleccionar el mismo archivo otra vez
     setFileInputKey(prev => prev + 1);
   };
@@ -182,6 +187,49 @@ export default function AirDataPage() {
     setTimeout(() => fetchAirData(), 100);
   };
 
+  // === AGRUPACIÓN DE DATOS PARA LOS GRÁFICOS ===
+
+  // Contar registros por sensor
+  const sensorCount = airData.reduce((acc: any, d) => {
+    acc[d.sensor_id] = (acc[d.sensor_id] || 0) + 1;
+    return acc;
+  }, {});
+
+  // Convertir a array para el pie chart
+  const pieData = Object.entries(sensorCount).map(([sensor, count]) => ({
+    name: sensor,
+    value: count,
+  }));
+
+  // Promedio de CO₂ por sensor
+  const co2BySensor: any = {};
+
+  airData.forEach((d) => {
+    if (!co2BySensor[d.sensor_id]) {
+      co2BySensor[d.sensor_id] = { total: 0, count: 0 };
+    }
+
+    // Validar CO₂
+    if (d.co2 !== null && d.co2 !== undefined && !isNaN(d.co2)) {
+      co2BySensor[d.sensor_id].total += d.co2;
+      co2BySensor[d.sensor_id].count += 1;
+    }
+
+  });
+
+  const barData = Object.entries(co2BySensor).map(([sensor, data]: any) => {
+    const avg = data.count > 0 ? data.total / data.count : 0;
+
+    return {
+      sensor,
+      co2: Number.isFinite(avg) ? avg : 0
+    };
+  });
+
+
+  // Colores para el pie chart
+  const COLORS = ["#0088FE", "#FF8042", "#00C49F", "#FFBB28", "#AA66CC", "#33B5E5"];
+
   return (
     <div className="p-6">
       <h1 className="text-xl font-bold mb-4">📡 Lecturas de Calidad de Aire</h1>
@@ -189,7 +237,7 @@ export default function AirDataPage() {
       {/* Sección de Carga de CSV */}
       <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
         <h2 className="text-lg font-semibold mb-3">📊 Cargar Datos de Aire (CSV)</h2>
-        
+
         <div className="flex gap-4 items-center mb-3">
           <button
             onClick={triggerFileInput}
@@ -198,7 +246,7 @@ export default function AirDataPage() {
           >
             📁 Seleccionar CSV
           </button>
-          
+
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium">Límite:</label>
             <input
@@ -221,9 +269,8 @@ export default function AirDataPage() {
 
           <button
             onClick={toggleShowAll}
-            className={`${
-              showAll ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-500 hover:bg-yellow-600'
-            } text-white px-4 py-2 rounded transition-colors`}
+            className={`${showAll ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-500 hover:bg-yellow-600'
+              } text-white px-4 py-2 rounded transition-colors`}
           >
             {showAll ? '📋 Mostrar Recientes' : '📂 Mostrar Todos'}
           </button>
@@ -242,7 +289,7 @@ export default function AirDataPage() {
         {uploadProgress > 0 && (
           <div className="mt-3">
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
+              <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${uploadProgress}%` }}
               ></div>
@@ -255,15 +302,14 @@ export default function AirDataPage() {
 
         {/* Mensajes */}
         {message && (
-          <div className={`mt-3 p-3 rounded ${
-            message.includes("✅") ? "bg-green-100 text-green-800 border border-green-200" : 
-            message.includes("❌") ? "bg-red-100 text-red-800 border border-red-200" : 
-            "bg-blue-100 text-blue-800 border border-blue-200"
-          }`}>
+          <div className={`mt-3 p-3 rounded ${message.includes("✅") ? "bg-green-100 text-green-800 border border-green-200" :
+              message.includes("❌") ? "bg-red-100 text-red-800 border border-red-200" :
+                "bg-blue-100 text-blue-800 border border-blue-200"
+            }`}>
             {message}
           </div>
         )}
-        
+
         {loading && (
           <div className="mt-3 text-blue-600">
             ⏳ Procesando CSV...
@@ -280,6 +326,49 @@ export default function AirDataPage() {
           </span>
         </div>
       </div>
+      {/* ====================== GRÁFICOS ============================ */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+
+        {/* === GRÁFICO 1: PIE CHART — Registros por Sensor === */}
+        <div className="bg-white p-4 border rounded-lg shadow">
+          <h2 className="text-lg font-semibold mb-4">Distribución de registros por sensor</h2>
+
+          <PieChart width={350} height={300}>
+            <Pie
+              data={pieData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={100}
+              fill="#8884d8"
+              label
+            >
+              {pieData.map((entry, index) => (
+                <Cell key={index} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+            <Legend verticalAlign="bottom" height={36} />
+          </PieChart>
+        </div>
+
+        {/* === GRÁFICO 2: BAR CHART — Promedio de CO₂ por Sensor === */}
+        <div className="bg-white p-4 border rounded-lg shadow">
+          <h2 className="text-lg font-semibold mb-4">Promedio de CO₂ por sensor</h2>
+
+          <BarChart width={400} height={300} data={barData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="sensor" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="co2" fill="#00C49F" name="CO₂ Promedio (ppm)" />
+          </BarChart>
+        </div>
+
+      </div>
+      {/* ============================================================ */}
 
       {/* Tabla de datos */}
       <div className="bg-white rounded-lg border shadow-sm">
@@ -341,29 +430,26 @@ export default function AirDataPage() {
             {showAll && <span className="ml-2 text-blue-600">(Todos los registros)</span>}
             {!showAll && <span className="ml-2 text-gray-500">(Más recientes)</span>}
           </div>
-          
+
           <div className="flex gap-2">
             <button
               onClick={() => setLimit(50)}
-              className={`px-3 py-1 text-xs rounded ${
-                limit === 50 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
-              }`}
+              className={`px-3 py-1 text-xs rounded ${limit === 50 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
             >
               50
             </button>
             <button
               onClick={() => setLimit(100)}
-              className={`px-3 py-1 text-xs rounded ${
-                limit === 100 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
-              }`}
+              className={`px-3 py-1 text-xs rounded ${limit === 100 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
             >
               100
             </button>
             <button
               onClick={() => setLimit(200)}
-              className={`px-3 py-1 text-xs rounded ${
-                limit === 200 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
-              }`}
+              className={`px-3 py-1 text-xs rounded ${limit === 200 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
             >
               200
             </button>

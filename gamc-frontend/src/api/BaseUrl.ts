@@ -3,8 +3,9 @@ import type { InternalAxiosRequestConfig } from "axios";
 
 // Crear la instancia
 export const API = axios.create({
-  baseURL: "http://127.0.0.1:8000",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000",
 });
+
 
 // Interceptor JWT sin errores de TypeScript
 API.interceptors.request.use(

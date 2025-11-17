@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 import { API } from "../api/BaseUrl";
+import {
+  PieChart, Pie, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, Cell
+} from "recharts";
 
 interface UndergroundSample {
   sensor_id: string;
@@ -33,7 +38,7 @@ export default function UndergroundDataPage() {
   const fetchUndergroundData = () => {
     const endpoint = showAll ? "/api/data/underground" : "/api/data/underground/latest";
     const params = showAll ? {} : { limit };
-    
+
     API.get(endpoint, { params })
       .then((res) => setUndData(res.data))
       .catch((err) => console.error("ERROR UND:", err));
@@ -65,7 +70,7 @@ export default function UndergroundDataPage() {
       const text = await file.text();
       const lines = text.split('\n');
       const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-      
+
       // Validar columnas
       const missingColumns = requiredColumns.filter(col => !headers.includes(col));
       if (missingColumns.length > 0) {
@@ -78,7 +83,7 @@ export default function UndergroundDataPage() {
       const rows: CSVRow[] = [];
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
-        
+
         const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
         const row: any = {};
         headers.forEach((header, index) => {
@@ -95,7 +100,7 @@ export default function UndergroundDataPage() {
       // Procesar cada fila
       for (let i = 0; i < Math.min(rows.length, limit); i++) {
         const row = rows[i];
-        
+
         const payload = {
           sensor_id: row["deviceInfo.deviceName"],
           time: row["time"],
@@ -107,7 +112,7 @@ export default function UndergroundDataPage() {
         // Validar campos críticos
         const criticalFields = ["sensor_id", "time", "distance"];
         const missingCriticalFields = criticalFields.filter(field => !payload[field as keyof typeof payload]);
-        
+
         if (missingCriticalFields.length > 0) {
           console.log(`Fila ${i + 1} incompleta → saltada. Campos críticos vacíos: ${missingCriticalFields}`);
           totalErr++;
@@ -134,7 +139,7 @@ export default function UndergroundDataPage() {
       }
 
       setMessage(`✅ ETL completado: ${totalOk} insertados, ${totalErr} errores`);
-      
+
       // Recargar datos después de 2 segundos
       setTimeout(() => {
         fetchUndergroundData();
@@ -158,7 +163,7 @@ export default function UndergroundDataPage() {
     }
 
     processCSV(file);
-    
+
     // Resetear input para permitir seleccionar el mismo archivo otra vez
     setFileInputKey(prev => prev + 1);
   };
@@ -172,6 +177,45 @@ export default function UndergroundDataPage() {
     setShowAll(!showAll);
     setTimeout(() => fetchUndergroundData(), 100);
   };
+  // === GRÁFICOS PARA SOTERRADOS ===
+
+  // Contar registros por sensor
+  const sensorCount = undData.reduce((acc: any, d) => {
+    acc[d.sensor_id] = (acc[d.sensor_id] || 0) + 1;
+    return acc;
+  }, {});
+
+  // PieChart - Registros por sensor
+  const pieData = Object.entries(sensorCount).map(([sensor, count]) => ({
+    name: sensor,
+    value: count,
+  }));
+
+  // Promedio de distancia por sensor
+  const distBySensor: any = {};
+
+  undData.forEach((d) => {
+    if (!distBySensor[d.sensor_id]) {
+      distBySensor[d.sensor_id] = { total: 0, count: 0 };
+    }
+
+    // Ignorar NaN o undefined
+    if (d.distance !== null && d.distance !== undefined && !isNaN(d.distance)) {
+      distBySensor[d.sensor_id].total += d.distance;
+      distBySensor[d.sensor_id].count += 1;
+    }
+  });
+
+  const barData = Object.entries(distBySensor).map(([sensor, data]: any) => {
+    const avg = data.count > 0 ? data.total / data.count : 0;
+
+    return {
+      sensor,
+      distance: Number.isFinite(avg) ? avg : 0,
+    };
+  });
+
+  const COLORS = ["#FF8042", "#0088FE", "#00C49F", "#FFBB28", "#AA66CC"];
 
   return (
     <div className="p-6">
@@ -180,7 +224,7 @@ export default function UndergroundDataPage() {
       {/* Sección de Carga de CSV */}
       <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
         <h2 className="text-lg font-semibold mb-3">🕳️ Cargar Datos Soterrados (CSV)</h2>
-        
+
         <div className="flex gap-4 items-center mb-3">
           <button
             onClick={triggerFileInput}
@@ -189,7 +233,7 @@ export default function UndergroundDataPage() {
           >
             📁 Seleccionar CSV
           </button>
-          
+
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium">Límite:</label>
             <input
@@ -212,9 +256,8 @@ export default function UndergroundDataPage() {
 
           <button
             onClick={toggleShowAll}
-            className={`${
-              showAll ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-500 hover:bg-yellow-600'
-            } text-white px-4 py-2 rounded transition-colors`}
+            className={`${showAll ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-500 hover:bg-yellow-600'
+              } text-white px-4 py-2 rounded transition-colors`}
           >
             {showAll ? '📋 Mostrar Recientes' : '📂 Mostrar Todos'}
           </button>
@@ -233,7 +276,7 @@ export default function UndergroundDataPage() {
         {uploadProgress > 0 && (
           <div className="mt-3">
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
+              <div
                 className="bg-orange-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${uploadProgress}%` }}
               ></div>
@@ -246,15 +289,14 @@ export default function UndergroundDataPage() {
 
         {/* Mensajes */}
         {message && (
-          <div className={`mt-3 p-3 rounded ${
-            message.includes("✅") ? "bg-green-100 text-green-800 border border-green-200" : 
-            message.includes("❌") ? "bg-red-100 text-red-800 border border-red-200" : 
-            "bg-blue-100 text-blue-800 border border-blue-200"
-          }`}>
+          <div className={`mt-3 p-3 rounded ${message.includes("✅") ? "bg-green-100 text-green-800 border border-green-200" :
+              message.includes("❌") ? "bg-red-100 text-red-800 border border-red-200" :
+                "bg-blue-100 text-blue-800 border border-blue-200"
+            }`}>
             {message}
           </div>
         )}
-        
+
         {loading && (
           <div className="mt-3 text-orange-600">
             ⏳ Procesando CSV de soterrados...
@@ -271,6 +313,48 @@ export default function UndergroundDataPage() {
           </span>
         </div>
       </div>
+      {/* ====================== GRÁFICOS ============================ */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+
+        {/* === PIE CHART — Registros por Sensor === */}
+        <div className="bg-white p-4 border rounded-lg shadow">
+          <h2 className="text-lg font-semibold mb-4">Distribución de registros por sensor</h2>
+
+          <PieChart width={350} height={300}>
+            <Pie
+              data={pieData}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={100}
+              label
+            >
+              {pieData.map((_, i) => (
+                <Cell key={i} fill={COLORS[i % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+            <Legend />
+          </PieChart>
+        </div>
+
+        {/* === BAR CHART — Promedio de Distancia por Sensor === */}
+        <div className="bg-white p-4 border rounded-lg shadow">
+          <h2 className="text-lg font-semibold mb-4">Promedio de distancia por sensor</h2>
+
+          <BarChart width={400} height={300} data={barData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="sensor" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="distance" fill="#FF8042" name="Distancia Promedio (m)" />
+          </BarChart>
+        </div>
+
+      </div>
+      {/* ============================================================ */}
 
       {/* Tabla de datos */}
       <div className="bg-white rounded-lg border shadow-sm">
@@ -328,29 +412,26 @@ export default function UndergroundDataPage() {
             {showAll && <span className="ml-2 text-orange-600">(Todos los registros)</span>}
             {!showAll && <span className="ml-2 text-gray-500">(Más recientes)</span>}
           </div>
-          
+
           <div className="flex gap-2">
             <button
               onClick={() => setLimit(50)}
-              className={`px-3 py-1 text-xs rounded ${
-                limit === 50 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700'
-              }`}
+              className={`px-3 py-1 text-xs rounded ${limit === 50 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
             >
               50
             </button>
             <button
               onClick={() => setLimit(100)}
-              className={`px-3 py-1 text-xs rounded ${
-                limit === 100 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700'
-              }`}
+              className={`px-3 py-1 text-xs rounded ${limit === 100 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
             >
               100
             </button>
             <button
               onClick={() => setLimit(200)}
-              className={`px-3 py-1 text-xs rounded ${
-                limit === 200 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700'
-              }`}
+              className={`px-3 py-1 text-xs rounded ${limit === 200 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
             >
               200
             </button>
