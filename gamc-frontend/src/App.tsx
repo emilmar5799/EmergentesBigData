@@ -1,25 +1,28 @@
 // src/App.tsx
-import { Routes, Route, Link } from "react-router-dom";
-import Home from "./pages/Home";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
 import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Layout from "./components/Layout";
 
 export default function App() {
   return (
-    <>
-      {/* Navbar simple */}
-      <nav className="h-14 px-4 bg-white shadow flex items-center gap-4">
-        <Link to="/" className="text-sm text-blue-600 hover:underline">
-          Home
-        </Link>
-        <Link to="/login" className="text-sm text-blue-600 hover:underline">
-          Login
-        </Link>
-      </nav>
-
+    <AuthProvider>
       <Routes>
-        <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/" element={<Navigate to="/login" replace />} />
       </Routes>
-    </>
+    </AuthProvider>
   );
 }
