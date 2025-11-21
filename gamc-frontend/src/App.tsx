@@ -1,41 +1,84 @@
-// src/App.tsx
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
+
+import DashboardLayout from "./layout/DashboardLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import UsersPage from "./pages/Users";
-
-// NUEVAS PÁGINAS 📌
 import AirDataPage from "./pages/AirDataPage";
 import NoiseDataPage from "./pages/NoiseDataPage";
 import UndergroundDataPage from "./pages/UndergroundDataPage";
 
 export default function App() {
+  const { user } = useAuth();
+  const role = user?.role;
+
   return (
-    <>
-      {/* NAVBAR */}
-      <nav className="h-14 px-4 bg-white shadow flex items-center gap-6">
-        <Link to="/" className="hover:underline">Home</Link>
-        <Link to="/login" className="hover:underline">Login</Link>
-        <Link to="/users" className="hover:underline">Usuarios</Link>
+    <Routes>
 
-        {/* NUEVOS MENÚS */}
-        <Link to="/air" className="hover:underline">Calidad Aire</Link>
-        <Link to="/noise" className="hover:underline">Sonido</Link>
-        <Link to="/underground" className="hover:underline">Soterrados</Link>
-      </nav>
+      {/* LOGIN (SIN LAYOUT) */}
+      <Route path="/login" element={<Login />} />
 
-      {/* ROUTES */}
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/users" element={<UsersPage />} />
+      {/* TODAS LAS OTRAS RUTAS USAN EL LAYOUT */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute
+            allowedRoles={["USUARIO", "ADMIN_SISTEMA", "DIRECTOR_DGEYCI", "ALCALDE_GAMC"]}
+          >
+            <DashboardLayout>
+              <Home />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
 
-        {/* NUEVAS RUTAS */}
-        <Route path="/air" element={<AirDataPage />} />
-        <Route path="/noise" element={<NoiseDataPage />} />
-        <Route path="/underground" element={<UndergroundDataPage />} />
-      </Routes>
-    </>
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN_SISTEMA"]}>
+            <DashboardLayout>
+              <UsersPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/air"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN_SISTEMA", "DIRECTOR_DGEYCI", "ALCALDE_GAMC"]}>
+            <DashboardLayout>
+              <AirDataPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/noise"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN_SISTEMA", "DIRECTOR_DGEYCI"]}>
+            <DashboardLayout>
+              <NoiseDataPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/underground"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN_SISTEMA", "DIRECTOR_DGEYCI"]}>
+            <DashboardLayout>
+              <UndergroundDataPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+    </Routes>
   );
 }
