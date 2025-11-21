@@ -292,6 +292,8 @@ export default function NoiseDataPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [limit, setLimit] = useState(100);
   const [showAll, setShowAll] = useState(false);
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [selectedSensor, setSelectedSensor] = useState('');
 
   useEffect(() => {
     fetchNoiseData();
@@ -305,6 +307,18 @@ export default function NoiseDataPage() {
       .then((res) => setNoiseData(res.data))
       .catch((err) => console.error("ERROR NOISE:", err));
   };
+
+  // Filtrar datos por rango de fechas y sensor
+  const filteredData = noiseData.filter(item => {
+    const itemDate = new Date(item.time);
+    const matchesDate = (!dateRange.start || itemDate >= new Date(dateRange.start)) &&
+                       (!dateRange.end || itemDate <= new Date(dateRange.end));
+    const matchesSensor = !selectedSensor || item.sensor_id === selectedSensor;
+    return matchesDate && matchesSensor;
+  });
+
+  // Obtener lista única de sensores
+  const uniqueSensors = [...new Set(noiseData.map(item => item.sensor_id))];
 
   const toFloat = (value: string): number | null => {
     if (!value || value.trim() === "") return null;
@@ -444,7 +458,7 @@ export default function NoiseDataPage() {
   // === AGRUPACIÓN DE DATOS PARA LOS GRÁFICOS ===
 
   // Contar registros por sensor
-  const sensorCount = noiseData.reduce((acc: any, d) => {
+  const sensorCount = filteredData.reduce((acc: any, d) => {
     acc[d.sensor_id] = (acc[d.sensor_id] || 0) + 1;
     return acc;
   }, {});
@@ -458,7 +472,7 @@ export default function NoiseDataPage() {
   // Promedio de LAeq por sensor
   const laeqBySensor: any = {};
 
-  noiseData.forEach((d) => {
+  filteredData.forEach((d) => {
     if (!laeqBySensor[d.sensor_id]) {
       laeqBySensor[d.sensor_id] = { total: 0, count: 0 };
     }
@@ -483,11 +497,11 @@ export default function NoiseDataPage() {
   // 📌 ESTADÍSTICAS AVANZADAS SONIDO
   // ===============================
 
-  const laeqValues = noiseData
+  const laeqValues = filteredData
     .map(d => d.laeq)
     .filter(v => typeof v === "number" && !isNaN(v));
 
-  const laeqTimestamps = noiseData
+  const laeqTimestamps = filteredData
     .map(d => d.time)
     .filter((_, i) => typeof laeqValues[i] === "number");
 
@@ -520,8 +534,8 @@ export default function NoiseDataPage() {
     control: controlIMR(laeqValues),
     boxCoxLambda: findOptimalLambda(laeqValues),
     temporal: temporalAnalysis(laeqValues, laeqTimestamps),
-    hourly: analyzeByHour(noiseData),
-    daily: analyzeByDayOfWeek(noiseData)
+    hourly: analyzeByHour(filteredData),
+    daily: analyzeByDayOfWeek(filteredData)
   };
 
   // Datos para gráficos avanzados
@@ -558,6 +572,46 @@ export default function NoiseDataPage() {
   }));
 
   const dailyChartData = stats.daily;
+
+  // Serie temporal por sensor
+  const timeSeriesData = filteredData
+    .map((d, index) => ({
+      time: new Date(d.time).toLocaleString('es-ES', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      timestamp: new Date(d.time),
+      laeq: d.laeq,
+      sensor: d.sensor_id,
+      index: index
+    }))
+    .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+  // Agrupar por sensor para líneas separadas
+  const sensorTimeSeries: { [key: string]: any[] } = {};
+  filteredData.forEach(d => {
+    if (!sensorTimeSeries[d.sensor_id]) {
+      sensorTimeSeries[d.sensor_id] = [];
+    }
+    sensorTimeSeries[d.sensor_id].push({
+      time: new Date(d.time),
+      laeq: d.laeq,
+      formattedTime: new Date(d.time).toLocaleString('es-ES', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    });
+  });
+
+  // Preparar datos para gráfico de líneas múltiples
+  const lineChartData = Object.entries(sensorTimeSeries).map(([sensor, data]) => ({
+    sensor,
+    data: data.sort((a, b) => a.time.getTime() - b.time.getTime())
+  }));
 
   // Colores
   const COLORS = ["#00C49F", "#FF8042", "#0088FE", "#FFBB28", "#AA66CC", "#33B5E5"];
@@ -649,6 +703,64 @@ export default function NoiseDataPage() {
         )}
       </div>
 
+      {/* Filtros Avanzados */}
+      <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
+        <h2 className="text-lg font-semibold mb-3">🔍 Filtros Avanzados</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Rango de Fechas - Inicio
+            </label>
+            <input
+              type="datetime-local"
+              value={dateRange.start}
+              onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+              className="w-full px-3 py-2 border rounded-md text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Rango de Fechas - Fin
+            </label>
+            <input
+              type="datetime-local"
+              value={dateRange.end}
+              onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+              className="w-full px-3 py-2 border rounded-md text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Filtrar por Sensor
+            </label>
+            <select
+              value={selectedSensor}
+              onChange={(e) => setSelectedSensor(e.target.value)}
+              className="w-full px-3 py-2 border rounded-md text-sm"
+            >
+              <option value="">Todos los sensores</option>
+              {uniqueSensors.map(sensor => (
+                <option key={sensor} value={sensor}>{sensor}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={() => {
+              setDateRange({ start: '', end: '' });
+              setSelectedSensor('');
+            }}
+            className="px-3 py-1 bg-gray-500 text-white text-sm rounded hover:bg-gray-600"
+          >
+            Limpiar Filtros
+          </button>
+          <span className="text-sm text-gray-600 ml-auto">
+            {filteredData.length} de {noiseData.length} registros mostrados
+          </span>
+        </div>
+      </div>
+
       {/* Información del modo actual */}
       <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
         <div className="flex items-center gap-2">
@@ -657,7 +769,7 @@ export default function NoiseDataPage() {
             {showAll ? '📂 Modo: Mostrando TODOS los registros' : '📋 Modo: Mostrando registros más recientes'}
           </span>
           <span className="text-sm text-gray-600 ml-4">
-            Mostrando {noiseData.length} registros
+            Mostrando {filteredData.length} registros
           </span>
         </div>
       </div>
@@ -768,6 +880,40 @@ export default function NoiseDataPage() {
               <Legend />
               <Bar dataKey="laeq" fill="#00C49F" name="LAeq Promedio (dB)" />
             </BarChart>
+          </div>
+        </div>
+
+        {/* Serie Temporal - Diagrama de Líneas por Sensor */}
+        <div className="bg-white p-6 border rounded-lg shadow">
+          <h2 className="text-lg font-semibold mb-4">Serie Temporal - Nivel de Sonido por Sensor</h2>
+          <div className="h-96">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="formattedTime" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                  interval="preserveStartEnd"
+                />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                {lineChartData.map((sensorData, index) => (
+                  <Line
+                    key={sensorData.sensor}
+                    type="monotone"
+                    data={sensorData.data}
+                    dataKey="laeq"
+                    name={sensorData.sensor}
+                    stroke={COLORS[index % COLORS.length]}
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
@@ -936,7 +1082,7 @@ export default function NoiseDataPage() {
           </thead>
 
           <tbody>
-            {noiseData.length === 0 ? (
+            {filteredData.length === 0 ? (
               <tr>
                 <td colSpan={6} className="border px-4 py-8 text-center text-gray-500 bg-gray-50">
                   <div className="flex flex-col items-center justify-center">
@@ -947,7 +1093,7 @@ export default function NoiseDataPage() {
                 </td>
               </tr>
             ) : (
-              noiseData.map((d, index) => (
+              filteredData.map((d, index) => (
                 <tr key={index} className="hover:bg-gray-50 transition-colors">
                   <td className="border px-4 py-3 font-medium text-gray-900">{d.sensor_id}</td>
                   <td className="border px-4 py-3 text-gray-700">
@@ -975,7 +1121,7 @@ export default function NoiseDataPage() {
       <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
         <div className="flex justify-between items-center">
           <div className="text-sm text-gray-600">
-            <span className="font-medium">Mostrando {noiseData.length} registros</span>
+            <span className="font-medium">Mostrando {filteredData.length} registros</span>
             {showAll && <span className="ml-2 text-green-600">(Todos los registros)</span>}
             {!showAll && <span className="ml-2 text-gray-500">(Más recientes)</span>}
           </div>
