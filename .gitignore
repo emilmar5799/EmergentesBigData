@@ -1,0 +1,115 @@
+# ============================================
+# 🔥 ARCHIVOS GENERALES
+# ============================================
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.cache
+*.swp
+*.swo
+
+# ============================================
+# 🔥 ENTORNOS Y VARIABLES
+# ============================================
+.env
+.env.*
+*.local
+
+# ============================================
+# 🔥 PYTHON BACKEND / SIMULADOR
+# ============================================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite
+*.db
+
+# dist y builds del backend
+dist/
+build/
+
+# virtualenv
+venv/
+.venv/
+env/
+ENV/
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# directorio docs generado
+docs/
+
+# ============================================
+# 🔥 NODE / REACT FRONTEND (Vite + Tailwind)
+# ============================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# build del frontend
+dist/
+build/
+
+# vite cache
+.vite/
+
+# typescript
+*.tsbuildinfo
+
+# ============================================
+# 🔥 DOCKER
+# ============================================
+docker-compose.override.yml
+docker-data/
+**/docker-data/
+**/.docker/
+
+# ============================================
+# 🔥 ARCHIVOS DE PRODUCCIÓN / SALIDA
+# ============================================
+*.tar
+*.zip
+*.gz
+
+# ============================================
+# 🔥 LOGS Y TEMPORALES DE SERVIDORES
+# ============================================
+*.pid
+*.seed
+*.out
+
+# ============================================
+# 🔥 SIMULADOR FOLDERS (solo mantener código)
+# ============================================
+Simulador/__pycache__/
+Simulador/*.pyc
+Simulador/*.log
+
+# ============================================
+# 🔥 IGNORAR BASES DE DATOS LOCALES
+# ============================================
+*.db
+*.sqlite3
+*.sqlite
+
+# ============================================
+# 🔥 VISUAL STUDIO CODE
+# ============================================
+.vscode/
+.history/
+
+# ============================================
+# 🔥 IDEs Y EDITORES
+# ============================================
+.idea/
+*.iml
+*.class
+.sublime-project
+.sublime-workspace
