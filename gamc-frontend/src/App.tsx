@@ -1,25 +1,84 @@
-// src/App.tsx
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
+
+import DashboardLayout from "./layout/DashboardLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
+
 import Home from "./pages/Home";
 import Login from "./pages/Login";
+import UsersPage from "./pages/Users";
+import AirDataPage from "./pages/AirDataPage";
+import NoiseDataPage from "./pages/NoiseDataPage";
+import UndergroundDataPage from "./pages/UndergroundDataPage";
 
 export default function App() {
-  return (
-    <>
-      {/* Navbar simple */}
-      <nav className="h-14 px-4 bg-white shadow flex items-center gap-4">
-        <Link to="/" className="text-sm text-blue-600 hover:underline">
-          Home
-        </Link>
-        <Link to="/login" className="text-sm text-blue-600 hover:underline">
-          Login
-        </Link>
-      </nav>
+  const { user } = useAuth();
+  const role = user?.role;
 
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-      </Routes>
-    </>
+  return (
+    <Routes>
+
+      {/* LOGIN (SIN LAYOUT) */}
+      <Route path="/login" element={<Login />} />
+
+      {/* TODAS LAS OTRAS RUTAS USAN EL LAYOUT */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute
+            allowedRoles={["USUARIO", "ADMIN_SISTEMA", "DIRECTOR_DGEYCI", "ALCALDE_GAMC"]}
+          >
+            <DashboardLayout>
+              <Home />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN_SISTEMA"]}>
+            <DashboardLayout>
+              <UsersPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/air"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN_SISTEMA", "DIRECTOR_DGEYCI", "ALCALDE_GAMC"]}>
+            <DashboardLayout>
+              <AirDataPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/noise"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN_SISTEMA", "DIRECTOR_DGEYCI"]}>
+            <DashboardLayout>
+              <NoiseDataPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/underground"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN_SISTEMA", "DIRECTOR_DGEYCI"]}>
+            <DashboardLayout>
+              <UndergroundDataPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+    </Routes>
   );
 }
