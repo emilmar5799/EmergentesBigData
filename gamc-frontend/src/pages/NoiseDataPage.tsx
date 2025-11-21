@@ -3,8 +3,268 @@ import { API } from "../api/BaseUrl";
 import {
   PieChart, Pie, Cell,
   BarChart, Bar, XAxis, YAxis,
-  Tooltip, Legend, CartesianGrid
+  Tooltip, Legend, CartesianGrid,
+  LineChart, Line, AreaChart, Area,
+  ScatterChart, Scatter, ResponsiveContainer
 } from "recharts";
+
+// ======================================================
+// 📌 FUNCIONES ESTADÍSTICAS AVANZADAS PARA SONIDO
+// ======================================================
+
+// Media
+const mean = (arr: number[]) =>
+  arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+
+// Mediana
+const median = (arr: number[]) => {
+  if (!arr.length) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
+};
+
+// Moda
+const mode = (arr: number[]) => {
+  const frequency: any = {};
+  let maxFreq = 0;
+  let modes: number[] = [];
+
+  arr.forEach(value => {
+    frequency[value] = (frequency[value] || 0) + 1;
+    if (frequency[value] > maxFreq) {
+      maxFreq = frequency[value];
+      modes = [value];
+    } else if (frequency[value] === maxFreq) {
+      modes.push(value);
+    }
+  });
+
+  return modes.length === arr.length ? [] : modes;
+};
+
+// Varianza
+const variance = (arr: number[]) =>
+  arr.length > 1
+    ? arr.reduce((acc, v) => acc + (v - mean(arr)) ** 2, 0) / (arr.length - 1)
+    : 0;
+
+// Desviación estándar
+const stdDev = (arr: number[]) => Math.sqrt(variance(arr));
+
+// Error estándar
+const stdError = (arr: number[]) => stdDev(arr) / Math.sqrt(arr.length);
+
+// Coeficiente de variación
+const coefficientOfVariation = (arr: number[]) => (stdDev(arr) / mean(arr)) * 100;
+
+// Percentil
+const percentile = (arr: number[], p: number) => {
+  if (!arr.length) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const pos = (p / 100) * (sorted.length - 1);
+  const base = Math.floor(pos);
+  const rest = pos - base;
+  return sorted[base + 1] !== undefined
+    ? sorted[base] + rest * (sorted[base + 1] - sorted[base])
+    : sorted[base];
+};
+
+// Rango intercuartílico
+const iqr = (arr: number[]) => percentile(arr, 75) - percentile(arr, 25);
+
+// Outliers (Método Tukey)
+const detectOutliers = (arr: number[]) => {
+  const q1 = percentile(arr, 25);
+  const q3 = percentile(arr, 75);
+  const r = iqr(arr);
+  const lower = q1 - 1.5 * r;
+  const upper = q3 + 1.5 * r;
+  return arr.filter(x => x < lower || x > upper);
+};
+
+// Asimetría (Skewness)
+const skewness = (arr: number[]) => {
+  const n = arr.length;
+  if (n < 3) return 0;
+  const m = mean(arr);
+  const s = stdDev(arr);
+  if (s === 0) return 0;
+  return (
+    (n * arr.reduce((sum, x) => sum + Math.pow(x - m, 3), 0)) /
+    ((n - 1) * (n - 2) * Math.pow(s, 3))
+  );
+};
+
+// Curtosis
+const kurtosis = (arr: number[]) => {
+  const n = arr.length;
+  if (n < 4) return 0;
+  const m = mean(arr);
+  const s = stdDev(arr);
+  if (s === 0) return 0;
+  const sum4 = arr.reduce((sum, x) => sum + Math.pow(x - m, 4), 0);
+  return (
+    (n * (n + 1) * sum4) /
+      ((n - 1) * (n - 2) * (n - 3) * Math.pow(s, 4)) -
+    (3 * (n - 1) ** 2) / ((n - 2) * (n - 3))
+  );
+};
+
+// Histograma
+const histogram = (arr: number[], bins = 15) => {
+  if (!arr.length) return { labels: [], counts: [] };
+  
+  const min = Math.min(...arr);
+  const max = Math.max(...arr);
+  const width = (max - min) / bins;
+  const counts = new Array(bins).fill(0);
+
+  arr.forEach(v => {
+    let i = Math.floor((v - min) / width);
+    if (i >= bins) i = bins - 1;
+    if (i < 0) i = 0;
+    counts[i]++;
+  });
+
+  const labels = counts.map((_, i) => {
+    const start = min + width * i;
+    const end = start + width;
+    return `${start.toFixed(1)} - ${end.toFixed(1)}`;
+  });
+
+  return { labels, counts, min, max, width };
+};
+
+// Q-Q plot
+const qqPlot = (arr: number[]) => {
+  if (!arr.length) return { theo: [], samp: [] };
+  
+  const sorted = [...arr].sort((a, b) => a - b);
+  const n = sorted.length;
+  const theo = [];
+  const samp = [];
+
+  for (let i = 0; i < n; i++) {
+    const p = (i + 0.5) / n;
+    const z = Math.sqrt(2) * erfinv(2 * p - 1);
+    theo.push(z);
+    samp.push(sorted[i]);
+  }
+  return { theo, samp };
+};
+
+// Función inversa del error
+function erfinv(x: number) {
+  if (x <= -1 || x >= 1) return NaN;
+  const a = 0.147;
+  const ln = Math.log(1 - x ** 2);
+  const s1 = 2 / (Math.PI * a) + ln / 2;
+  const s2 = ln / a;
+  return Math.sign(x) * Math.sqrt(Math.sqrt(s1 ** 2 - s2) - s1);
+}
+
+// Control Chart I-MR
+const controlIMR = (arr: number[]) => {
+  if (arr.length < 2) return null;
+
+  const MR = arr.slice(1).map((v, i) => Math.abs(v - arr[i]));
+  const mrBar = mean(MR);
+  const cl = mean(arr);
+
+  return {
+    values: arr,
+    mr: MR,
+    cl,
+    ucl: cl + 2.66 * mrBar,
+    lcl: cl - 2.66 * mrBar,
+    mrUcl: 3.267 * mrBar,
+    mrCl: mrBar
+  };
+};
+
+// Transformación Box-Cox
+const boxCoxTransform = (arr: number[], lambda: number) => {
+  if (lambda === 0) {
+    return arr.map(x => Math.log(x));
+  }
+  return arr.map(x => (Math.pow(x, lambda) - 1) / lambda);
+};
+
+// Encontrar lambda óptimo para Box-Cox
+const findOptimalLambda = (arr: number[]) => {
+  // Simulación de búsqueda de lambda óptimo
+  return 0.5; // Valor simplificado para demo
+};
+
+// Análisis de tendencia temporal
+const temporalAnalysis = (arr: number[], timestamps: string[]) => {
+  if (arr.length < 2) return null;
+  
+  // Tendencia lineal simple
+  const n = arr.length;
+  const x = Array.from({length: n}, (_, i) => i);
+  const y = arr;
+  
+  const sumX = x.reduce((a, b) => a + b, 0);
+  const sumY = y.reduce((a, b) => a + b, 0);
+  const sumXY = x.reduce((a, _, i) => a + x[i] * y[i], 0);
+  const sumX2 = x.reduce((a, b) => a + b * b, 0);
+  
+  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  const intercept = (sumY - slope * sumX) / n;
+  
+  return {
+    slope,
+    intercept,
+    trend: x.map(xi => slope * xi + intercept),
+    correlation: slope > 0 ? 'Positiva' : slope < 0 ? 'Negativa' : 'Estable'
+  };
+};
+
+// Análisis por hora del día
+const analyzeByHour = (data: NoiseSample[]) => {
+  const hourlyData: { [key: number]: number[] } = {};
+  
+  data.forEach(d => {
+    const hour = new Date(d.time).getHours();
+    if (!hourlyData[hour]) {
+      hourlyData[hour] = [];
+    }
+    hourlyData[hour].push(d.laeq);
+  });
+  
+  return Object.entries(hourlyData).map(([hour, values]) => ({
+    hour: parseInt(hour),
+    average: mean(values),
+    count: values.length,
+    min: Math.min(...values),
+    max: Math.max(...values)
+  })).sort((a, b) => a.hour - b.hour);
+};
+
+// Análisis por día de la semana
+const analyzeByDayOfWeek = (data: NoiseSample[]) => {
+  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const dailyData: { [key: string]: number[] } = {};
+  
+  data.forEach(d => {
+    const dayIndex = new Date(d.time).getDay();
+    const dayName = days[dayIndex];
+    if (!dailyData[dayName]) {
+      dailyData[dayName] = [];
+    }
+    dailyData[dayName].push(d.laeq);
+  });
+  
+  return days.map(dayName => ({
+    day: dayName,
+    average: dailyData[dayName] ? mean(dailyData[dayName]) : 0,
+    count: dailyData[dayName] ? dailyData[dayName].length : 0
+  }));
+};
 
 interface NoiseSample {
   sensor_id: string;
@@ -35,11 +295,11 @@ export default function NoiseDataPage() {
 
   useEffect(() => {
     fetchNoiseData();
-  }, []);
+  }, [showAll, limit]); // ✅ CORREGIDO: Ahora se actualiza cuando cambia showAll o limit
 
   const fetchNoiseData = () => {
     const endpoint = showAll ? "/api/data/noise" : "/api/data/noise/latest";
-    const params = showAll ? {} : { limit };
+    const params = showAll ? { limit } : { limit };
 
     API.get(endpoint, { params })
       .then((res) => setNoiseData(res.data))
@@ -179,8 +439,8 @@ export default function NoiseDataPage() {
 
   const toggleShowAll = () => {
     setShowAll(!showAll);
-    setTimeout(() => fetchNoiseData(), 100);
   };
+
   // === AGRUPACIÓN DE DATOS PARA LOS GRÁFICOS ===
 
   // Contar registros por sensor
@@ -219,12 +479,92 @@ export default function NoiseDataPage() {
     };
   });
 
+  // ===============================
+  // 📌 ESTADÍSTICAS AVANZADAS SONIDO
+  // ===============================
+
+  const laeqValues = noiseData
+    .map(d => d.laeq)
+    .filter(v => typeof v === "number" && !isNaN(v));
+
+  const laeqTimestamps = noiseData
+    .map(d => d.time)
+    .filter((_, i) => typeof laeqValues[i] === "number");
+
+  const stats = {
+    count: laeqValues.length,
+    mean: mean(laeqValues),
+    median: median(laeqValues),
+    mode: mode(laeqValues),
+    min: Math.min(...laeqValues),
+    max: Math.max(...laeqValues),
+    range: Math.max(...laeqValues) - Math.min(...laeqValues),
+    std: stdDev(laeqValues),
+    variance: variance(laeqValues),
+    stdError: stdError(laeqValues),
+    cv: coefficientOfVariation(laeqValues),
+    skewness: skewness(laeqValues),
+    kurtosis: kurtosis(laeqValues),
+    p10: percentile(laeqValues, 10),
+    p25: percentile(laeqValues, 25),
+    p50: percentile(laeqValues, 50),
+    p75: percentile(laeqValues, 75),
+    p90: percentile(laeqValues, 90),
+    p95: percentile(laeqValues, 95),
+    p99: percentile(laeqValues, 99),
+    iqr: iqr(laeqValues),
+    outliers: detectOutliers(laeqValues),
+    outlierCount: detectOutliers(laeqValues).length,
+    histogram: histogram(laeqValues, 12),
+    qq: qqPlot(laeqValues),
+    control: controlIMR(laeqValues),
+    boxCoxLambda: findOptimalLambda(laeqValues),
+    temporal: temporalAnalysis(laeqValues, laeqTimestamps),
+    hourly: analyzeByHour(noiseData),
+    daily: analyzeByDayOfWeek(noiseData)
+  };
+
+  // Datos para gráficos avanzados
+  const histogramChartData = stats.histogram.labels.map((label, i) => ({
+    range: label,
+    frequency: stats.histogram.counts[i]
+  }));
+
+  const qqChartData = stats.qq.theo.map((theo, i) => ({
+    theoretical: theo,
+    actual: stats.qq.samp[i]
+  }));
+
+  const controlChartData = stats.control ? stats.control.values.map((value, i) => ({
+    index: i + 1,
+    value: value,
+    cl: stats.control?.cl,
+    ucl: stats.control?.ucl,
+    lcl: stats.control?.lcl
+  })) : [];
+
+  const mrChartData = stats.control ? stats.control.mr.map((mr, i) => ({
+    index: i + 1,
+    mr: mr,
+    mrCl: stats.control?.mrCl,
+    mrUcl: stats.control?.mrUcl
+  })) : [];
+
+  const hourlyChartData = stats.hourly.map(hour => ({
+    hour: `${hour.hour}:00`,
+    average: hour.average,
+    min: hour.min,
+    max: hour.max
+  }));
+
+  const dailyChartData = stats.daily;
+
   // Colores
   const COLORS = ["#00C49F", "#FF8042", "#0088FE", "#FFBB28", "#AA66CC", "#33B5E5"];
 
   return (
     <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">🔊 Lecturas de Sonido</h1>
+      <h1 className="text-2xl font-bold mb-6">🔊 Dashboard Avanzado de Monitoreo de Sonido</h1>
 
       {/* Sección de Carga de CSV */}
       <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
@@ -256,7 +596,7 @@ export default function NoiseDataPage() {
             onClick={fetchNoiseData}
             className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition-colors"
           >
-            🔄 Actualizar Tabla
+            🔄 Actualizar Datos
           </button>
 
           <button
@@ -316,53 +656,273 @@ export default function NoiseDataPage() {
           <span className="text-sm font-medium">
             {showAll ? '📂 Modo: Mostrando TODOS los registros' : '📋 Modo: Mostrando registros más recientes'}
           </span>
+          <span className="text-sm text-gray-600 ml-4">
+            Mostrando {noiseData.length} registros
+          </span>
         </div>
       </div>
-      {/* ====================== GRÁFICOS ============================ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
 
-        {/* === PIE CHART — Registros por Sensor === */}
-        <div className="bg-white p-4 border rounded-lg shadow">
-          <h2 className="text-lg font-semibold mb-4">Distribución de registros por sensor</h2>
+      {/* ====================== PANEL DE ESTADÍSTICAS AVANZADAS ============================ */}
+      <div className="mb-8">
+        <h2 className="text-xl font-bold mb-4">📈 Análisis Estadístico Avanzado - Nivel de Sonido (LAeq)</h2>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+          <div className="p-3 bg-white rounded-lg shadow border">
+            <h3 className="font-semibold text-gray-600 text-sm">Registros</h3>
+            <p className="text-2xl font-bold">{stats.count}</p>
+          </div>
 
-          <PieChart width={350} height={300}>
-            <Pie
-              data={pieData}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={100}
-              label
-            >
-              {pieData.map((_, i) => (
-                <Cell key={i} fill={COLORS[i % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip />
-            <Legend />
-          </PieChart>
+          <div className="p-3 bg-white rounded-lg shadow border">
+            <h3 className="font-semibold text-gray-600 text-sm">Media LAeq</h3>
+            <p className="text-2xl font-bold">{stats.mean.toFixed(1)} dB</p>
+          </div>
+
+          <div className="p-3 bg-white rounded-lg shadow border">
+            <h3 className="font-semibold text-gray-600 text-sm">Mediana</h3>
+            <p className="text-2xl font-bold">{stats.median.toFixed(1)} dB</p>
+          </div>
+
+          <div className="p-3 bg-white rounded-lg shadow border">
+            <h3 className="font-semibold text-gray-600 text-sm">Desv. Estándar</h3>
+            <p className="text-2xl font-bold">{stats.std.toFixed(1)} dB</p>
+          </div>
+
+          <div className="p-3 bg-white rounded-lg shadow border">
+            <h3 className="font-semibold text-gray-600 text-sm">Coef. Variación</h3>
+            <p className="text-2xl font-bold">{stats.cv.toFixed(1)}%</p>
+          </div>
+
+          <div className="p-3 bg-white rounded-lg shadow border">
+            <h3 className="font-semibold text-red-600 text-sm">Outliers</h3>
+            <p className="text-2xl font-bold text-red-600">{stats.outlierCount}</p>
+          </div>
         </div>
 
-        {/* === BAR CHART — Promedio de LAeq por Sensor === */}
-        <div className="bg-white p-4 border rounded-lg shadow">
-          <h2 className="text-lg font-semibold mb-4">Promedio de LAeq por sensor</h2>
+        {/* Estadísticas de distribución */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="p-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200">
+            <h3 className="font-semibold text-green-700">Asimetría (Skewness)</h3>
+            <p className="text-2xl font-bold text-green-800">{stats.skewness.toFixed(3)}</p>
+            <p className="text-xs text-green-600 mt-1">
+              {Math.abs(stats.skewness) < 0.5 ? "Distribución simétrica" : 
+               stats.skewness > 0 ? "Sesgo positivo" : "Sesgo negativo"}
+            </p>
+          </div>
 
-          <BarChart width={400} height={300} data={barData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="sensor" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="laeq" fill="#00C49F" name="LAeq Promedio (dB)" />
-          </BarChart>
+          <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200">
+            <h3 className="font-semibold text-purple-700">Curtosis</h3>
+            <p className="text-2xl font-bold text-purple-800">{stats.kurtosis.toFixed(3)}</p>
+            <p className="text-xs text-purple-600 mt-1">
+              {stats.kurtosis > 0 ? "Distribución leptocúrtica" : 
+               stats.kurtosis < 0 ? "Distribución platicúrtica" : "Distribución normal"}
+            </p>
+          </div>
+
+          <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
+            <h3 className="font-semibold text-blue-700">Rango Intercuartílico</h3>
+            <p className="text-2xl font-bold text-blue-800">{stats.iqr.toFixed(1)} dB</p>
+            <p className="text-xs text-blue-600 mt-1">Q3-Q1: {stats.p25.toFixed(1)} - {stats.p75.toFixed(1)} dB</p>
+          </div>
+
+          <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg border border-orange-200">
+            <h3 className="font-semibold text-orange-700">Error Estándar</h3>
+            <p className="text-2xl font-bold text-orange-800">{stats.stdError.toFixed(2)} dB</p>
+            <p className="text-xs text-orange-600 mt-1">Precisión de la media</p>
+          </div>
         </div>
-
       </div>
-      {/* ============================================================ */}
 
-      {/* Tabla de datos */}
-      <div className="bg-white rounded-lg border shadow-sm">
+      {/* ====================== GRÁFICOS AVANZADOS ============================ */}
+      <div className="space-y-8">
+
+        {/* Gráficos básicos existentes */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-white p-4 border rounded-lg shadow">
+            <h2 className="text-lg font-semibold mb-4">Distribución de registros por sensor</h2>
+            <PieChart width={350} height={300}>
+              <Pie
+                data={pieData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={100}
+                label
+              >
+                {pieData.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </div>
+
+          <div className="bg-white p-4 border rounded-lg shadow">
+            <h2 className="text-lg font-semibold mb-4">Promedio de LAeq por sensor</h2>
+            <BarChart width={400} height={300} data={barData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="sensor" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="laeq" fill="#00C49F" name="LAeq Promedio (dB)" />
+            </BarChart>
+          </div>
+        </div>
+
+        {/* Evolución del Nivel de Sonido Promedio */}
+        <div className="bg-white p-6 border rounded-lg shadow">
+          <h2 className="text-lg font-semibold mb-4">Evolución del Nivel de Sonido Promedio (dB)</h2>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={controlChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="index" name="Tiempo" />
+                <YAxis />
+                <Tooltip />
+                <Line type="monotone" dataKey="value" stroke="#00C49F" name="LAeq (dB)" strokeWidth={2} />
+                <Line type="monotone" dataKey="cl" stroke="#8884d8" name="Línea Central" strokeDasharray="3 3" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Histograma de distribución */}
+        <div className="bg-white p-6 border rounded-lg shadow">
+          <h2 className="text-lg font-semibold mb-4">Distribución de Frecuencia (Histograma) - LAeq</h2>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={histogramChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="range" angle={-45} textAnchor="end" height={80} />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="frequency" fill="#00C49F" name="Frecuencia" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-4 p-3 bg-gray-50 rounded">
+            <p className="text-sm text-gray-700">
+              <strong>Observación:</strong> {
+                Math.abs(stats.skewness) < 0.5 ? "Sigue una distribución aproximadamente normal" :
+                stats.skewness > 0 ? "Distribución normal sesgada a la derecha" :
+                "Distribución normal sesgada a la izquierda"
+              }
+            </p>
+          </div>
+        </div>
+
+        {/* Gráfico Q-Q */}
+        <div className="bg-white p-6 border rounded-lg shadow">
+          <h2 className="text-lg font-semibold mb-4">Prueba de Normalidad (Gráfico Q-Q)</h2>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart data={qqChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="theoretical" name="Teórico" />
+                <YAxis dataKey="actual" name="Actual (dB)" />
+                <Tooltip />
+                <Scatter name="Q-Q Plot" fill="#00C49F" />
+                <Line type="linear" dataKey="actual" stroke="#ff7300" dot={false} />
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-4 p-3 bg-gray-50 rounded">
+            <p className="text-sm text-gray-700">
+              <strong>Observación:</strong> {
+                Math.abs(stats.skewness) < 0.5 && Math.abs(stats.kurtosis) < 1 ? 
+                "Sigue una distribución normal" : "No sigue una distribución normal"
+              }
+            </p>
+          </div>
+        </div>
+
+        {/* Gráficos de Control */}
+        {stats.control && (
+          <div className="bg-white p-6 border rounded-lg shadow">
+            <h2 className="text-lg font-semibold mb-4">Gráfico de Control de Proceso I-MR (6 Sigma)</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="h-80">
+                <h3 className="font-semibold mb-2">Gráfico I (Individuales)</h3>
+                <ResponsiveContainer width="100%" height="90%">
+                  <LineChart data={controlChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="index" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="value" stroke="#00C49F" name="LAeq (dB)" />
+                    <Line type="monotone" dataKey="cl" stroke="#8884d8" name="Línea Central" strokeDasharray="3 3" />
+                    <Line type="monotone" dataKey="ucl" stroke="#FF8042" name="LCS" strokeDasharray="3 3" />
+                    <Line type="monotone" dataKey="lcl" stroke="#FF8042" name="LCI" strokeDasharray="3 3" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="h-80">
+                <h3 className="font-semibold mb-2">Gráfico MR (Rango Móvil)</h3>
+                <ResponsiveContainer width="100%" height="90%">
+                  <LineChart data={mrChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="index" />
+                    <YAxis />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="mr" stroke="#0088FE" name="Rango Móvil" />
+                    <Line type="monotone" dataKey="mrCl" stroke="#8884d8" name="Línea Central MR" strokeDasharray="3 3" />
+                    <Line type="monotone" dataKey="mrUcl" stroke="#FF8042" name="LCS MR" strokeDasharray="3 3" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Patrón de Ruido: Hora del Día */}
+        <div className="bg-white p-6 border rounded-lg shadow">
+          <h2 className="text-lg font-semibold mb-4">Patrón de Ruido: Hora del Día</h2>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={hourlyChartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="hour" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="average" fill="#00C49F" name="LAeq Promedio (dB)" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Análisis de Outliers */}
+        {stats.outliers.length > 0 && (
+          <div className="bg-white p-6 border rounded-lg shadow">
+            <h2 className="text-lg font-semibold mb-4">Análisis de Valores Atípicos (Outliers)</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 bg-red-50 rounded border border-red-200">
+                <h3 className="font-semibold text-red-700">Total Outliers</h3>
+                <p className="text-3xl font-bold text-red-800">{stats.outliers.length}</p>
+              </div>
+              <div className="p-4 bg-orange-50 rounded border border-orange-200">
+                <h3 className="font-semibold text-orange-700">Porcentaje</h3>
+                <p className="text-3xl font-bold text-orange-800">
+                  {((stats.outliers.length / stats.count) * 100).toFixed(1)}%
+                </p>
+              </div>
+              <div className="p-4 bg-blue-50 rounded border border-blue-200">
+                <h3 className="font-semibold text-blue-700">Rango Outliers</h3>
+                <p className="text-lg font-bold text-blue-800">
+                  {Math.min(...stats.outliers).toFixed(1)} - {Math.max(...stats.outliers).toFixed(1)} dB
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ====================== TABLA DE DATOS ============================ */}
+      <div className="mt-8 bg-white rounded-lg border shadow-sm">
+        <div className="p-4 border-b bg-gray-50">
+          <h2 className="text-lg font-semibold">Datos de Monitoreo de Sonido</h2>
+        </div>
         <table className="min-w-full border-collapse">
           <thead className="bg-gray-100">
             <tr>
@@ -411,7 +971,7 @@ export default function NoiseDataPage() {
         </table>
       </div>
 
-      {/* Contador de registros */}
+      {/* Contador de registros - CORREGIDO */}
       <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
         <div className="flex justify-between items-center">
           <div className="text-sm text-gray-600">
@@ -423,22 +983,25 @@ export default function NoiseDataPage() {
           <div className="flex gap-2">
             <button
               onClick={() => setLimit(50)}
-              className={`px-3 py-1 text-xs rounded ${limit === 50 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'
-                }`}
+              className={`px-3 py-1 text-xs rounded transition-colors ${
+                limit === 50 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
             >
               50
             </button>
             <button
               onClick={() => setLimit(100)}
-              className={`px-3 py-1 text-xs rounded ${limit === 100 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'
-                }`}
+              className={`px-3 py-1 text-xs rounded transition-colors ${
+                limit === 100 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
             >
               100
             </button>
             <button
               onClick={() => setLimit(200)}
-              className={`px-3 py-1 text-xs rounded ${limit === 200 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'
-                }`}
+              className={`px-3 py-1 text-xs rounded transition-colors ${
+                limit === 200 ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
             >
               200
             </button>
