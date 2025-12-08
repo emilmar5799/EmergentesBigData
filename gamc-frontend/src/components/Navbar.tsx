@@ -38,7 +38,9 @@ export default function Navbar() {
         {["ADMIN_SISTEMA", "DIRECTOR_DGEYCI", "ALCALDE_GAMC"].includes(role) && (
           <Link className="hover:text-blue-400 transition-all" to="/air">Aire</Link>
         )}
-
+{["ADMIN_SISTEMA", "DIRECTOR_DGEYCI", "ALCALDE_GAMC"].includes(role) && (
+          <Link className="hover:text-blue-400 transition-all" to="/air/predict">Aire</Link>
+        )}
         {["ADMIN_SISTEMA", "DIRECTOR_DGEYCI"].includes(role) && (
           <Link className="hover:text-blue-400 transition-all" to="/noise">Sonido</Link>
         )}
@@ -49,6 +51,7 @@ export default function Navbar() {
         {["ADMIN_SISTEMA", "DIRECTOR_DGEYCI"].includes(role) && (
           <Link className="hover:text-blue-400 transition-all" to="/underground/predict">Prediccion Soterrados</Link>
         )}
+        
 
       </div>
 
