@@ -5,7 +5,8 @@ import {
   XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, Cell,
   LineChart, Line, ScatterChart, Scatter,
-  ResponsiveContainer
+  ResponsiveContainer,
+  Label
 } from "recharts";
 
 // ======================================================
@@ -108,7 +109,7 @@ const kurtosis = (arr: number[]) => {
   const sum4 = arr.reduce((sum, x) => sum + Math.pow(x - m, 4), 0);
   return (
     (n * (n + 1) * sum4) /
-      ((n - 1) * (n - 2) * (n - 3) * Math.pow(s, 4)) -
+    ((n - 1) * (n - 2) * (n - 3) * Math.pow(s, 4)) -
     (3 * (n - 1) ** 2) / ((n - 2) * (n - 3))
   );
 };
@@ -116,7 +117,7 @@ const kurtosis = (arr: number[]) => {
 // Histograma
 const histogram = (arr: number[], bins = 15) => {
   if (!arr.length) return { labels: [], counts: [] };
-  
+
   const min = Math.min(...arr);
   const max = Math.max(...arr);
   const width = (max - min) / bins;
@@ -141,7 +142,7 @@ const histogram = (arr: number[], bins = 15) => {
 // Q-Q plot
 const qqPlot = (arr: number[]) => {
   if (!arr.length) return { theo: [], samp: [] };
-  
+
   const sorted = [...arr].sort((a, b) => a - b);
   const n = sorted.length;
   const theo = [];
@@ -188,19 +189,19 @@ const controlIMR = (arr: number[]) => {
 // Análisis de tendencia temporal
 const temporalAnalysis = (arr: number[], timestamps: string[]) => {
   if (arr.length < 2) return null;
-  
+
   const n = arr.length;
-  const x = Array.from({length: n}, (_, i) => i);
+  const x = Array.from({ length: n }, (_, i) => i);
   const y = arr;
-  
+
   const sumX = x.reduce((a, b) => a + b, 0);
   const sumY = y.reduce((a, b) => a + b, 0);
   const sumXY = x.reduce((a, _, i) => a + x[i] * y[i], 0);
   const sumX2 = x.reduce((a, b) => a + b * b, 0);
-  
+
   const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
   const intercept = (sumY - slope * sumX) / n;
-  
+
   return {
     slope,
     intercept,
@@ -212,7 +213,7 @@ const temporalAnalysis = (arr: number[], timestamps: string[]) => {
 // Análisis por posición
 const analyzeByPosition = (data: UndergroundSample[]) => {
   const positionData: { [key: string]: number[] } = {};
-  
+
   data.forEach(d => {
     const position = d.position || 'No especificada';
     if (!positionData[position]) {
@@ -220,7 +221,7 @@ const analyzeByPosition = (data: UndergroundSample[]) => {
     }
     positionData[position].push(d.distance);
   });
-  
+
   return Object.entries(positionData).map(([position, values]) => ({
     position,
     average: mean(values),
@@ -274,7 +275,7 @@ export default function UndergroundDataPage() {
   const filteredData = undData.filter(item => {
     const itemDate = new Date(item.time);
     const matchesDate = (!dateRange.start || itemDate >= new Date(dateRange.start)) &&
-                       (!dateRange.end || itemDate <= new Date(dateRange.end));
+      (!dateRange.end || itemDate <= new Date(dateRange.end));
     const matchesSensor = !selectedSensor || item.sensor_id === selectedSensor;
     return matchesDate && matchesSensor;
   });
@@ -636,8 +637,8 @@ export default function UndergroundDataPage() {
         {/* Mensajes */}
         {message && (
           <div className={`mt-3 p-3 rounded ${message.includes("✅") ? "bg-green-100 text-green-800 border border-green-200" :
-              message.includes("❌") ? "bg-red-100 text-red-800 border border-red-200" :
-                "bg-blue-100 text-blue-800 border border-blue-200"
+            message.includes("❌") ? "bg-red-100 text-red-800 border border-red-200" :
+              "bg-blue-100 text-blue-800 border border-blue-200"
             }`}>
             {message}
           </div>
@@ -724,7 +725,7 @@ export default function UndergroundDataPage() {
       {/* ====================== PANEL DE ESTADÍSTICAS AVANZADAS ============================ */}
       <div className="mb-8">
         <h2 className="text-xl font-bold mb-4">📈 Análisis Estadístico Avanzado - Distancias Soterradas</h2>
-        
+
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
           <div className="p-3 bg-white rounded-lg shadow border">
             <h3 className="font-semibold text-gray-600 text-sm">Registros</h3>
@@ -763,8 +764,8 @@ export default function UndergroundDataPage() {
             <h3 className="font-semibold text-orange-700">Asimetría (Skewness)</h3>
             <p className="text-2xl font-bold text-orange-800">{stats.skewness.toFixed(3)}</p>
             <p className="text-xs text-orange-600 mt-1">
-              {Math.abs(stats.skewness) < 0.5 ? "Distribución simétrica" : 
-               stats.skewness > 0 ? "Sesgo positivo" : "Sesgo negativo"}
+              {Math.abs(stats.skewness) < 0.5 ? "Distribución simétrica" :
+                stats.skewness > 0 ? "Sesgo positivo" : "Sesgo negativo"}
             </p>
           </div>
 
@@ -772,8 +773,8 @@ export default function UndergroundDataPage() {
             <h3 className="font-semibold text-purple-700">Curtosis</h3>
             <p className="text-2xl font-bold text-purple-800">{stats.kurtosis.toFixed(3)}</p>
             <p className="text-xs text-purple-600 mt-1">
-              {stats.kurtosis > 0 ? "Distribución leptocúrtica" : 
-               stats.kurtosis < 0 ? "Distribución platicúrtica" : "Distribución normal"}
+              {stats.kurtosis > 0 ? "Distribución leptocúrtica" :
+                stats.kurtosis < 0 ? "Distribución platicúrtica" : "Distribución normal"}
             </p>
           </div>
 
@@ -821,8 +822,19 @@ export default function UndergroundDataPage() {
             <h2 className="text-lg font-semibold mb-4">Promedio de distancia por sensor</h2>
             <BarChart width={400} height={300} data={barData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="sensor" />
-              <YAxis />
+              <XAxis dataKey="sensor">
+                <Label value="Sensores" offset={-5} position="insideBottom" />
+              </XAxis>
+
+              <YAxis>
+                <Label
+                  value="Distancia Promedio (m)"
+                  angle={-90}
+                  position="insideLeft"
+                  style={{ textAnchor: "middle" }}
+                />
+              </YAxis>
+
               <Tooltip />
               <Legend />
               <Bar dataKey="distance" fill="#FF8042" name="Distancia Promedio (m)" />
@@ -837,14 +849,24 @@ export default function UndergroundDataPage() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="formattedTime" 
+                <XAxis
+                  dataKey="formattedTime"
                   angle={-45}
                   textAnchor="end"
                   height={80}
-                  interval="preserveStartEnd"
-                />
-                <YAxis />
+                >
+                  <Label value="Fecha / Hora" offset={-5} position="insideBottom" />
+                </XAxis>
+
+                <YAxis>
+                  <Label
+                    value="Distancia (m)"
+                    angle={-90}
+                    position="insideLeft"
+                    style={{ textAnchor: "middle" }}
+                  />
+                </YAxis>
+
                 <Tooltip />
                 <Legend />
                 {lineChartData.map((sensorData, index) => (
@@ -871,8 +893,19 @@ export default function UndergroundDataPage() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={histogramChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="range" angle={-45} textAnchor="end" height={80} />
-                <YAxis />
+                <XAxis dataKey="range" angle={-45} textAnchor="end" height={80}>
+                  <Label value="Rangos de Distancia (m)" offset={-5} position="insideBottom" />
+                </XAxis>
+
+                <YAxis>
+                  <Label
+                    value="Frecuencia"
+                    angle={-90}
+                    position="insideLeft"
+                    style={{ textAnchor: "middle" }}
+                  />
+                </YAxis>
+
                 <Tooltip />
                 <Bar dataKey="frequency" fill="#FF8042" name="Frecuencia" />
               </BarChart>
@@ -882,8 +915,8 @@ export default function UndergroundDataPage() {
             <p className="text-sm text-gray-700">
               <strong>Observación:</strong> {
                 Math.abs(stats.skewness) < 0.5 ? "Sigue una distribución aproximadamente normal" :
-                stats.skewness > 0 ? "Distribución normal sesgada a la derecha" :
-                "Distribución normal sesgada a la izquierda"
+                  stats.skewness > 0 ? "Distribución normal sesgada a la derecha" :
+                    "Distribución normal sesgada a la izquierda"
               }
             </p>
           </div>
@@ -896,8 +929,19 @@ export default function UndergroundDataPage() {
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart data={qqChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="theoretical" name="Teórico" />
-                <YAxis dataKey="actual" name="Actual (m)" />
+                <XAxis dataKey="theoretical">
+                  <Label value="Valores Teóricos (Normal)" offset={-5} position="insideBottom" />
+                </XAxis>
+
+                <YAxis dataKey="actual">
+                  <Label
+                    value="Valores Observados (m)"
+                    angle={-90}
+                    position="insideLeft"
+                    style={{ textAnchor: "middle" }}
+                  />
+                </YAxis>
+
                 <Tooltip />
                 <Scatter name="Q-Q Plot" fill="#FF8042" />
                 <Line type="linear" dataKey="actual" stroke="#ff7300" dot={false} />
@@ -907,8 +951,8 @@ export default function UndergroundDataPage() {
           <div className="mt-4 p-3 bg-gray-50 rounded">
             <p className="text-sm text-gray-700">
               <strong>Observación:</strong> {
-                Math.abs(stats.skewness) < 0.5 && Math.abs(stats.kurtosis) < 1 ? 
-                "Sigue una distribución normal" : "No sigue una distribución normal"
+                Math.abs(stats.skewness) < 0.5 && Math.abs(stats.kurtosis) < 1 ?
+                  "Sigue una distribución normal" : "No sigue una distribución normal"
               }
             </p>
           </div>
@@ -924,8 +968,19 @@ export default function UndergroundDataPage() {
                 <ResponsiveContainer width="100%" height="90%">
                   <LineChart data={controlChartData}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="index" />
-                    <YAxis />
+                    <XAxis dataKey="index">
+                      <Label value="Número de Muestra" offset={-5} position="insideBottom" />
+                    </XAxis>
+
+                    <YAxis>
+                      <Label
+                        value="Distancia (m)"
+                        angle={-90}
+                        position="insideLeft"
+                        style={{ textAnchor: "middle" }}
+                      />
+                    </YAxis>
+
                     <Tooltip />
                     <Line type="monotone" dataKey="value" stroke="#FF8042" name="Distancia (m)" />
                     <Line type="monotone" dataKey="cl" stroke="#8884d8" name="Línea Central" strokeDasharray="3 3" />
@@ -939,8 +994,19 @@ export default function UndergroundDataPage() {
                 <ResponsiveContainer width="100%" height="90%">
                   <LineChart data={mrChartData}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="index" />
-                    <YAxis />
+                    <XAxis dataKey="index">
+                      <Label value="Número de Muestra" offset={-5} position="insideBottom" />
+                    </XAxis>
+
+                    <YAxis>
+                      <Label
+                        value="Rango Móvil (MR)"
+                        angle={-90}
+                        position="insideLeft"
+                        style={{ textAnchor: "middle" }}
+                      />
+                    </YAxis>
+
                     <Tooltip />
                     <Line type="monotone" dataKey="mr" stroke="#0088FE" name="Rango Móvil" />
                     <Line type="monotone" dataKey="mrCl" stroke="#8884d8" name="Línea Central MR" strokeDasharray="3 3" />
@@ -960,8 +1026,19 @@ export default function UndergroundDataPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={stats.positions}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="position" angle={-45} textAnchor="end" height={80} />
-                  <YAxis />
+                  <XAxis dataKey="position" angle={-45} textAnchor="end" height={80}>
+                    <Label value="Posición" offset={-5} position="insideBottom" />
+                  </XAxis>
+
+                  <YAxis>
+                    <Label
+                      value="Distancia Promedio (m)"
+                      angle={-90}
+                      position="insideLeft"
+                      style={{ textAnchor: "middle" }}
+                    />
+                  </YAxis>
+
                   <Tooltip />
                   <Bar dataKey="average" fill="#FF8042" name="Distancia Promedio (m)" />
                 </BarChart>
@@ -1059,25 +1136,22 @@ export default function UndergroundDataPage() {
           <div className="flex gap-2">
             <button
               onClick={() => setLimit(50)}
-              className={`px-3 py-1 text-xs rounded transition-colors ${
-                limit === 50 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              className={`px-3 py-1 text-xs rounded transition-colors ${limit === 50 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
             >
               50
             </button>
             <button
               onClick={() => setLimit(100)}
-              className={`px-3 py-1 text-xs rounded transition-colors ${
-                limit === 100 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              className={`px-3 py-1 text-xs rounded transition-colors ${limit === 100 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
             >
               100
             </button>
             <button
               onClick={() => setLimit(200)}
-              className={`px-3 py-1 text-xs rounded transition-colors ${
-                limit === 200 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              className={`px-3 py-1 text-xs rounded transition-colors ${limit === 200 ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
             >
               200
             </button>

@@ -96,123 +96,208 @@ export default function UsersPage() {
     }
   };
 
-  return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-4">Usuarios</h1>
+return (
+  <div className="p-8 fade-in text-gray-100">
 
+    {/* TÍTULO */}
+    <h1 className="text-4xl font-bold text-center mb-8 tracking-wide">
+      Gestión de Usuarios
+    </h1>
+
+    {/* BOTÓN CREAR – verde suave */}
+    <div className="flex justify-center">
       <button
         onClick={openCreateModal}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg mb-4"
+        className="
+          px-6 py-3 rounded-xl text-white font-semibold 
+          bg-[#4CAF50] hover:bg-[#43A047]
+          transition-all duration-300 shadow-lg shadow-green-900/40
+        "
       >
         + Nuevo Usuario
       </button>
+    </div>
 
-      {/* Tabla */}
-      <div className="bg-white rounded-lg shadow p-4">
-        {loading ? (
-          <p>Cargando...</p>
-        ) : (
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b">
-                <th className="py-2">Nombre</th>
-                <th>Email</th>
-                <th>Rol</th>
-                <th></th>
+    {/* TABLA */}
+    <div
+      className="
+        max-w-5xl mx-auto mt-8 
+        bg-[#1a1a1a]/70 backdrop-blur-xl 
+        border border-white/10 
+        rounded-2xl shadow-2xl p-6
+      "
+    >
+      {loading ? (
+        <p className="text-center text-gray-400 py-6">Cargando...</p>
+      ) : (
+        <table className="w-full text-left">
+          <thead>
+            <tr className="text-gray-300 border-b border-gray-700">
+              <th className="py-3">Nombre</th>
+              <th>Correo</th>
+              <th>Rol</th>
+              <th className="text-right">Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {users.map((u) => (
+              <tr
+                key={u.id}
+                className="
+                  border-b border-gray-800 
+                  hover:bg-white/5 transition
+                "
+              >
+                <td className="py-3">{u.full_name}</td>
+                <td>{u.email}</td>
+
+                <td className="uppercase text-green-300 font-medium">
+                  {u.role}
+                </td>
+
+                <td className="text-right flex justify-end gap-3 py-2">
+
+                  {/* EDITAR – verde pastel suave */}
+                  <button
+                    onClick={() => openEditModal(u)}
+                    className="
+                      px-4 py-1.5 rounded-lg 
+                      bg-[#7BC47F] hover:bg-[#6BB56E] 
+                      text-black font-semibold 
+                      transition shadow-md
+                    "
+                  >
+                    Editar
+                  </button>
+
+                  {/* ELIMINAR – rojo tenue */}
+                  <button
+                    onClick={() => deleteUser(u.id)}
+                    className="
+                      px-4 py-1.5 rounded-lg 
+                      bg-[#E57373] hover:bg-[#EF5350] 
+                      text-white font-semibold 
+                      transition shadow-md
+                    "
+                  >
+                    Eliminar
+                  </button>
+
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id} className="border-b">
-                  <td className="py-2">{u.full_name}</td>
-                  <td>{u.email}</td>
-                  <td>{u.role}</td>
-                  <td>
-                    <button
-                      onClick={() => openEditModal(u)}
-                      className="px-2 py-1 bg-yellow-500 text-white rounded mr-2"
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => deleteUser(u.id)}
-                      className="px-2 py-1 bg-red-600 text-white rounded"
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* -------------------- MODAL -------------------- */}
-      {modalVisible && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white w-96 rounded-lg p-6 shadow-lg">
-            <h2 className="text-xl font-bold mb-4">
-              {editUser ? "Editar Usuario" : "Nuevo Usuario"}
-            </h2>
-
-            <div className="space-y-3">
-              <input
-                className="w-full border rounded-lg p-2"
-                placeholder="Nombre completo"
-                value={form.full_name}
-                onChange={(e) =>
-                  setForm({ ...form, full_name: e.target.value })
-                }
-              />
-
-              <input
-                className="w-full border rounded-lg p-2"
-                placeholder="Correo"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-              />
-
-              <input
-                className="w-full border rounded-lg p-2"
-                placeholder="Contraseña"
-                type="password"
-                value={form.password}
-                onChange={(e) =>
-                  setForm({ ...form, password: e.target.value })
-                }
-              />
-
-              <select
-                className="w-full border rounded-lg p-2"
-                value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
-              >
-                <option value="USUARIO">USUARIO</option>
-                <option value="ADMIN_SISTEMA">ADMIN_SISTEMA</option>
-                <option value="DIRECTOR_DGEYCI">DIRECTOR_DGEYCI</option>
-                <option value="ALCALDE_GAMC">ALCALDE_GAMC</option>
-              </select>
-            </div>
-
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                className="px-4 py-2 bg-gray-400 rounded text-white"
-                onClick={() => setModalVisible(false)}
-              >
-                Cancelar
-              </button>
-
-              <button
-                className="px-4 py-2 bg-blue-600 rounded text-white"
-                onClick={handleSave}
-              >
-                Guardar
-              </button>
-            </div>
-          </div>
-        </div>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
-  );
+
+    {/* -------------------- MODAL -------------------- */}
+    {modalVisible && (
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+
+        {/* CARD MODAL – verde en crear, gris suave en editar */}
+        <div
+          className={`
+            w-96 p-6 rounded-2xl shadow-2xl border border-white/10 fade-in
+            ${
+              editUser
+                ? "bg-[#2a2a2a]/90" // editar: gris profesional
+                : "bg-[#1f2d1f]/90" // crear: verde muy oscuro (suave)
+            }
+            backdrop-blur-xl
+          `}
+        >
+          <h2 className="text-2xl font-bold text-center mb-4">
+            {editUser ? "Editar Usuario" : "Nuevo Usuario"}
+          </h2>
+
+          <div className="space-y-4">
+
+            <input
+              className="
+                w-full bg-[#2c2c2c] border border-gray-600 rounded-lg p-2.5 
+                text-white focus:ring-2 focus:ring-green-600
+              "
+              placeholder="Nombre completo"
+              value={form.full_name}
+              onChange={(e) =>
+                setForm({ ...form, full_name: e.target.value })
+              }
+            />
+
+            <input
+              className="
+                w-full bg-[#2c2c2c] border border-gray-600 rounded-lg p-2.5 
+                text-white focus:ring-2 focus:ring-green-600
+              "
+              placeholder="Correo"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+
+            <input
+              className="
+                w-full bg-[#2c2c2c] border border-gray-600 rounded-lg p-2.5 
+                text-white focus:ring-2 focus:ring-green-600
+              "
+              type="password"
+              placeholder="Contraseña"
+              value={form.password}
+              onChange={(e) =>
+                setForm({ ...form, password: e.target.value })
+              }
+            />
+
+            <select
+              className="
+                w-full bg-[#2c2c2c] border border-gray-600 rounded-lg p-2.5 
+                text-white focus:ring-2 focus:ring-green-600
+              "
+              value={form.role}
+              onChange={(e) => setForm({ ...form, role: e.target.value })}
+            >
+              <option value="USUARIO">USUARIO</option>
+              <option value="ADMIN_SISTEMA">ADMIN_SISTEMA</option>
+              <option value="DIRECTOR_DGEYCI">DIRECTOR_DGEYCI</option>
+              <option value="ALCALDE_GAMC">ALCALDE_GAMC</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              onClick={() => setModalVisible(false)}
+              className="
+                px-4 py-2 rounded-lg 
+                bg-gray-600 hover:bg-gray-500 
+                text-white font-medium transition
+              "
+            >
+              Cancelar
+            </button>
+
+            <button
+              onClick={handleSave}
+              className={`
+                px-4 py-2 rounded-lg font-semibold transition
+                ${
+                  editUser
+                    ? "bg-[#7BC47F] text-black hover:bg-[#6BB56E]"
+                    : "bg-[#4CAF50] text-white hover:bg-[#43A047]"
+                }
+              `}
+            >
+              Guardar
+            </button>
+          </div>
+
+        </div>
+      </div>
+    )}
+
+  </div>
+);
+
+
+
 }

@@ -46,6 +46,9 @@ export default function Navbar() {
         {["ADMIN_SISTEMA", "DIRECTOR_DGEYCI"].includes(role) && (
           <Link className="hover:text-blue-400 transition-all" to="/underground">Soterrados</Link>
         )}
+        {["ADMIN_SISTEMA", "DIRECTOR_DGEYCI"].includes(role) && (
+          <Link className="hover:text-blue-400 transition-all" to="/underground/predict">Prediccion Soterrados</Link>
+        )}
 
       </div>
 
